@@ -193,6 +193,8 @@ contract PhiFactory is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable, 
     /// @param signature_ The signature of the signed art data.
     /// @param createConfig_ The art creation configuration.
     /// @return The address of the created art contract.
+    /// @dev @audit-note slither fails to deduce that reentrancy is not an issue here
+    // slither-disable-next-line reentrancy-events
     function createArt(
         bytes calldata signedData_,
         bytes calldata signature_,

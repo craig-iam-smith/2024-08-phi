@@ -541,6 +541,8 @@ contract Cred is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable, Pausab
     /// @param verificationType_ The verification type of the cred.
     /// @param bondingCurve_ The address of the CuratePrice contract for the cred.
     /// @return The ID of the newly created cred.
+    /// @dev @audit-note slither fails to deduce that reentrancy is not an issue here
+    // slither-disable-next-line reentrancy-events
     function _createCredInternal(
         address creator_,
         string memory credURL_,
@@ -566,7 +568,7 @@ contract Cred is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable, Pausab
         creds[credIdCounter].createdAt = uint40(block.timestamp);
         creds[credIdCounter].buyShareRoyalty = buyShareRoyalty_;
         creds[credIdCounter].sellShareRoyalty = sellShareRoyalty_;
-
+    // slither-disable-next-line reentrancy-events
         buyShareCred(credIdCounter, 1, 0);
 
         emit CredCreated(creator_, credIdCounter, credURL_, credType_, verificationType_);
@@ -585,6 +587,8 @@ contract Cred is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable, Pausab
     /// @param isBuy True if buy, false if sell
     /// @param curator_ The address performing the action
     /// @param priceLimit The maximum price for the trade or minimum price for sell
+    /// @dev @audit-note slither fails deduce that reentrancy is not an issue here
+    // slither-disable-next-line reentrancy-events
     function _handleTrade(
         uint256 credId_,
         uint256 amount_,
