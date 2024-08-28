@@ -49,7 +49,6 @@ contract Cred is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable, Pausab
     mapping(address priceCurve => bool enable) public curatePriceWhitelist;
     mapping(address curator => uint256[] credIds) private _credIdsPerAddress;
     mapping(address curator => mapping(uint256 credId => bool exist)) private _credIdExistsPerAddress;
-    mapping(address curator => uint256 arrayLength) private _credIdsPerAddressArrLength;
     mapping(address curator => mapping(uint256 credId => uint256 index)) private _credIdsPerAddressCredIdIndex;
 
     /*//////////////////////////////////////////////////////////////
@@ -631,6 +630,8 @@ contract Cred is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable, Pausab
                     block.timestamp, lastTradeTimestamp[credId_][curator_] + SHARE_LOCK_PERIOD
                 );
             }
+            // @audit shareBalance does not revert, returns 0 in second argument, amount is guaranteed to be greater than 0
+            // @audit this function will revert without checking the 'success' of the call to shareBalance
             (, uint256 nums) = shareBalance[credId_].tryGet(curator_);
             if (nums < amount_) {
                 revert InsufficientShares();
@@ -686,13 +687,13 @@ contract Cred is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable, Pausab
     }
 
     // Function to add a new credId to the address's list
+    // @audit - no need to store array length in a separate mapping, can use array length directly
+    // @audit - saves gas and storage by using array length directly
     function _addCredIdPerAddress(uint256 credId_, address sender_) public {
         // Add the new credId to the array
         _credIdsPerAddress[sender_].push(credId_);
         // Store the index of the new credId
-        _credIdsPerAddressCredIdIndex[sender_][credId_] = _credIdsPerAddressArrLength[sender_];
-        // Increment the array length counter
-        _credIdsPerAddressArrLength[sender_]++;
+        _credIdsPerAddressCredIdIndex[sender_][credId_] = _credIdsPerAddress[sender_].length - 1;
     }
 
     // Function to remove a credId from the address's list
@@ -726,11 +727,7 @@ contract Cred is Initializable, UUPSUpgradeable, Ownable2StepUpgradeable, Pausab
         // Remove the index mapping for the removed credId
         delete _credIdsPerAddressCredIdIndex[sender_][credIdToRemove];
 
-        // Decrement the array length counter, if it's greater than 0
-        if (_credIdsPerAddressArrLength[sender_] > 0) {
-            _credIdsPerAddressArrLength[sender_]--;
-        }
-    }
+     }
 
     /*//////////////////////////////////////////////////////////////
                        INTERNAL UPDATE BATCH TRADE
